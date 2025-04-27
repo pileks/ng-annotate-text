@@ -40,6 +40,7 @@ export interface TooltipComponentInstance {
   anchor: HTMLElement;
   offset: number;
   stopDestroy?: () => void;
+  skipPositioning?: boolean;
 }
 
 @Component({
@@ -390,8 +391,61 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     instance.anchor = anchor;
     instance.offset = this.popupOffset;
     
+    // Add skipPositioning flag if available on the interface
+    (instance as any).skipPositioning = true;
+    
     this.activeTooltip = componentRef;
     this.cdr.detectChanges();
+    
+    // Position the tooltip directly above the hovered annotation
+    setTimeout(() => {
+      // Get the tooltip element - assuming similar structure to the popup
+      const tooltipElement = (componentRef.instance as any).el?.nativeElement?.querySelector('.ng-annotate-text-tooltip') || 
+                            (componentRef.instance as any).el?.nativeElement;
+      
+      if (tooltipElement && anchor) {
+        // Get anchor position
+        const anchorRect = anchor.getBoundingClientRect();
+        
+        // Position tooltip above the annotation
+        tooltipElement.style.position = 'fixed';
+        tooltipElement.style.zIndex = '9998'; // Just below popups
+        
+        // Position centered above the annotation
+        const x = anchorRect.left + (anchorRect.width / 2);
+        const y = anchorRect.top - 5; // Just above the annotation
+        
+        // Wait for tooltip to render so we can get its size
+        setTimeout(() => {
+          const tooltipRect = tooltipElement.getBoundingClientRect();
+          
+          // Center horizontally on the annotation
+          tooltipElement.style.left = `${x - (tooltipRect.width / 2)}px`;
+          tooltipElement.style.top = `${y - tooltipRect.height}px`;
+          
+          // Make sure tooltip stays in viewport
+          const viewportWidth = window.innerWidth;
+          const viewportHeight = window.innerHeight;
+          
+          // Check right edge
+          if (tooltipRect.right > viewportWidth) {
+            const offset = tooltipRect.right - viewportWidth + 10;
+            tooltipElement.style.left = `${x - (tooltipRect.width / 2) - offset}px`;
+          }
+          
+          // Check left edge
+          if (tooltipRect.left < 0) {
+            tooltipElement.style.left = '10px';
+          }
+          
+          // Check top edge
+          if (tooltipRect.top < 0) {
+            // Reposition below the annotation instead
+            tooltipElement.style.top = `${anchorRect.bottom + 5}px`;
+          }
+        }, 0);
+      }
+    }, 0);
   }
 
   private clearPopup(): void {

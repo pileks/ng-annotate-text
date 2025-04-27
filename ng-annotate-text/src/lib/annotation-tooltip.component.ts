@@ -110,13 +110,14 @@ export class AnnotationTooltipComponent implements AfterViewInit, OnDestroy {
   @Input() annotation!: Annotation;
   @Input() anchor!: HTMLElement;
   @Input() offset: number = 10;
+  @Input() skipPositioning: boolean = false;
   
   edge: string = '';
   hasContent = false;
   private hideTimeout: any = null;
   
   constructor(
-    private el: ElementRef,
+    public el: ElementRef,
     private renderer: Renderer2,
     private positionService: PositionService,
     private cdr: ChangeDetectorRef
@@ -125,11 +126,18 @@ export class AnnotationTooltipComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.checkContent();
     this.appendToBody();
-    this.position();
+    
+    // Only position using the service if not skipping positioning
+    if (!this.skipPositioning) {
+      this.position();
+    }
+    
     this.show();
     
-    // Re-position on window resize
-    window.addEventListener('resize', this.onWindowResize);
+    // Re-position on window resize only if not skipping positioning
+    if (!this.skipPositioning) {
+      window.addEventListener('resize', this.onWindowResize);
+    }
     
     // Listen for mouseenter and mouseleave on the tooltip itself
     this.el.nativeElement.addEventListener('mouseenter', this.onTooltipMouseEnter);
