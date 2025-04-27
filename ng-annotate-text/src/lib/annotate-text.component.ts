@@ -357,12 +357,15 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     
     instance.close = () => {
       this.annotate.emit(annotation);
+      this.clearSelection();
       this.clearPopup();
     };
 
     instance.reject = () => {
       removeAnnotation(annotation.id, this.annotations);
       this.annotateDelete.emit(annotation);
+      this.clearSelection();
+      this.updateContent();
       this.clearPopup();
     };
 
@@ -394,6 +397,7 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     
     this.activePopup.destroy();
     this.activePopup = null;
+    this.clearSelection();
   }
 
   private clearTooltip(): void {
@@ -441,12 +445,15 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     // Setup functions
     instance.close = () => {
       this.annotate.emit(annotation);
+      this.clearSelection();
       this.clearPopup();
     };
 
     instance.reject = () => {
       removeAnnotation(annotation.id, this.annotations);
       this.annotateDelete.emit(annotation);
+      this.clearSelection();
+      this.updateContent();
       this.clearPopup();
     };
     
