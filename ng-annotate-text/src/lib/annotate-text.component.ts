@@ -189,8 +189,8 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
       this.updateContent();
       this.cdr.detectChanges();
       
-      // Position popup directly at mouse position
-      this.createPopupAtMousePosition(annotation, event);
+      // Position popup directly at mouse position with isNew=true
+      this.createPopupAtMousePosition(annotation, event, true);
     } catch (ex) {
       if (ex instanceof Error) {
         this.annotateError.emit(ex);
@@ -216,7 +216,9 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     if (!annotation) return;
 
     this.clearPopups();
-    this.createAnnotationPopup(annotation, target, false);
+    
+    // Use the same positioning approach as for text selection
+    this.createPopupAtMousePosition(annotation, event, false);
   }
 
   private onMouseEnter(event: Event): void {
@@ -423,7 +425,7 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     return document.querySelector(`.ng-annotate-text-${annotationId}`);
   }
   
-  private createPopupAtMousePosition(annotation: Annotation, event: MouseEvent): void {
+  private createPopupAtMousePosition(annotation: Annotation, event: MouseEvent, isNew: boolean = false): void {
     if (!this.popupComponentType) return;
     
     this.clearPopups();
@@ -438,7 +440,7 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     
     const instance = componentRef.instance;
     instance.annotation = annotation;
-    instance.isNew = true;
+    instance.isNew = isNew;
     instance.readonly = this.readonly;
     instance.skipPositioning = true; // Skip automatic positioning
     
@@ -471,9 +473,18 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
         popupElement.style.position = 'fixed'; // Use fixed positioning for more reliable coordinates
         popupElement.style.zIndex = '9999';
         
-        // Position at mouse coordinates
-        const x = event.clientX; // Use clientX for fixed positioning
-        const y = event.clientY + 20; // 20px below mouse
+        let x, y;
+
+        if (!isNew && event.target instanceof HTMLElement) {
+          // For existing annotations, position above the annotation
+          const targetRect = (event.target as HTMLElement).getBoundingClientRect();
+          x = targetRect.left + (targetRect.width / 2); // Center of the annotation
+          y = targetRect.top - 10; // Just above the annotation
+        } else {
+          // For new annotations, position near the mouse
+          x = event.clientX; // Use clientX for fixed positioning
+          y = event.clientY + 20; // 20px below mouse
+        }
         
         popupElement.style.left = `${x}px`;
         popupElement.style.top = `${y}px`;
@@ -493,6 +504,17 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
         if (rect.bottom > viewportHeight) {
           const offset = rect.bottom - viewportHeight + 10; // 10px buffer
           popupElement.style.top = `${y - offset}px`;
+        }
+        
+        // Check top edge for popups positioned above elements
+        if (rect.top < 0) {
+          // Reposition below the element instead
+          if (!isNew && event.target instanceof HTMLElement) {
+            const targetRect = (event.target as HTMLElement).getBoundingClientRect();
+            popupElement.style.top = `${targetRect.bottom + 10}px`;
+          } else {
+            popupElement.style.top = '10px';
+          }
         }
       }
     }, 0);
