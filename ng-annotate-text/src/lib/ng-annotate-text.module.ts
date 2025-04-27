@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { AnnotateTextComponent } from './annotate-text.component';
 import { AnnotationPopupComponent } from './annotation-popup.component';
 import { AnnotationTooltipComponent } from './annotation-tooltip.component';
@@ -11,7 +12,8 @@ import { AnnotationTooltipComponent } from './annotation-tooltip.component';
     AnnotationTooltipComponent
   ],
   imports: [
-    CommonModule
+    CommonModule,
+    FormsModule
   ],
   exports: [
     AnnotateTextComponent

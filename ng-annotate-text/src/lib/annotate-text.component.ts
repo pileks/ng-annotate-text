@@ -12,13 +12,34 @@ import {
   ViewContainerRef,
   Injector,
   ComponentFactoryResolver, 
-  ChangeDetectorRef
+  ChangeDetectorRef,
+  Type,
+  ComponentRef
 } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { Annotation } from './models/annotation.model';
 import { parseAnnotations, getAnnotationById, removeAnnotation, removeChildren } from './utils/annotation-utils';
 import { AnnotationPopupComponent } from './annotation-popup.component';
 import { AnnotationTooltipComponent } from './annotation-tooltip.component';
+
+// Define interfaces for component instances
+export interface PopupComponentInstance {
+  annotation: Annotation;
+  isNew: boolean;
+  readonly: boolean;
+  anchor: HTMLElement;
+  offset: number;
+  close: () => void;
+  reject: () => void;
+  stopDestroy?: () => void;
+}
+
+export interface TooltipComponentInstance {
+  annotation: Annotation;
+  anchor: HTMLElement;
+  offset: number;
+  stopDestroy?: () => void;
+}
 
 @Component({
   selector: 'ng-annotate-text',
@@ -39,8 +60,8 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
   @Input() text: string = '';
   @Input() annotations: Annotation[] = [];
   @Input() readonly: boolean = false;
-  @Input() popupComponentType: any = null;
-  @Input() tooltipComponentType: any = null;
+  @Input() popupComponentType: Type<any> | null = null;
+  @Input() tooltipComponentType: Type<any> | null = null;
   @Input() popupOffset: number = 10;
 
   @Output() annotate = new EventEmitter<Annotation>();
@@ -48,8 +69,8 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
   @Output() annotateError = new EventEmitter<Error>();
 
   contentHtml: SafeHtml = '';
-  private activePopup: any = null;
-  private activeTooltip: any = null;
+  private activePopup: ComponentRef<PopupComponentInstance> | null = null;
+  private activeTooltip: ComponentRef<TooltipComponentInstance> | null = null;
   private eventListeners: { element: HTMLElement, type: string, handler: EventListener }[] = [];
 
   constructor(
@@ -146,6 +167,7 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
 
     try {
       const annotation = this.createAnnotation();
+      this.updateContent();
       this.cdr.detectChanges();
       
       // Find the newly created span
@@ -307,7 +329,11 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     if (!this.popupComponentType) return;
 
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.popupComponentType);
-    const componentRef = this.viewContainerRef.createComponent(componentFactory, undefined, this.injector);
+    const componentRef = this.viewContainerRef.createComponent<PopupComponentInstance>(
+      componentFactory, 
+      undefined, 
+      this.injector
+    );
     
     const instance = componentRef.instance;
     instance.annotation = annotation;
@@ -335,7 +361,11 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     if (!this.tooltipComponentType) return;
 
     const componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.tooltipComponentType);
-    const componentRef = this.viewContainerRef.createComponent(componentFactory, undefined, this.injector);
+    const componentRef = this.viewContainerRef.createComponent<TooltipComponentInstance>(
+      componentFactory, 
+      undefined, 
+      this.injector
+    );
     
     const instance = componentRef.instance;
     instance.annotation = annotation;
