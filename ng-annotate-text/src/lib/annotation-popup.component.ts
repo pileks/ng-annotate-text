@@ -150,14 +150,15 @@ export class AnnotationPopupComponent implements AfterViewInit, OnDestroy {
   @Input() annotation!: Annotation;
   @Input() isNew: boolean = false;
   @Input() readonly: boolean = false;
-  @Input() anchor!: HTMLElement;
+  @Input() anchor?: HTMLElement;
   @Input() offset: number = 10;
+  @Input() skipPositioning: boolean = false;
   
   edge: string = '';
   hasContent = false;
   
   constructor(
-    private el: ElementRef,
+    public el: ElementRef,
     private renderer: Renderer2,
     private positionService: PositionService,
     private cdr: ChangeDetectorRef
@@ -166,10 +167,12 @@ export class AnnotationPopupComponent implements AfterViewInit, OnDestroy {
   ngAfterViewInit(): void {
     this.checkContent();
     this.appendToBody();
-    this.position();
     
-    // Re-position on window resize
-    window.addEventListener('resize', this.onWindowResize);
+    if (this.anchor && !this.skipPositioning) {
+      this.positionElement();
+      
+      window.addEventListener('resize', this.onWindowResize);
+    }
   }
 
   ngOnDestroy(): void {
@@ -177,20 +180,18 @@ export class AnnotationPopupComponent implements AfterViewInit, OnDestroy {
   }
 
   private onWindowResize = (): void => {
-    this.position();
+    this.positionElement();
   }
 
   private checkContent(): void {
-    // Check if custom content is provided via content projection
     this.hasContent = this.el.nativeElement.querySelector('ng-content').children.length > 0;
   }
 
   private appendToBody(): void {
-    // Append popup to body for better positioning
     this.renderer.appendChild(document.body, this.el.nativeElement);
   }
 
-  private position(): void {
+  private positionElement(): void {
     if (!this.el || !this.anchor) return;
     
     const position = this.positionService.calculatePosition(
@@ -207,6 +208,10 @@ export class AnnotationPopupComponent implements AfterViewInit, OnDestroy {
     
     this.edge = position.edge || '';
     this.cdr.detectChanges();
+  }
+  
+  position(): void {
+    this.positionElement();
   }
   
   close(): void {

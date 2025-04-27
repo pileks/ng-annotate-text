@@ -27,11 +27,12 @@ export interface PopupComponentInstance {
   annotation: Annotation;
   isNew: boolean;
   readonly: boolean;
-  anchor: HTMLElement;
+  anchor?: HTMLElement;
   offset: number;
   close: () => void;
   reject: () => void;
   stopDestroy?: () => void;
+  skipPositioning?: boolean;
 }
 
 export interface TooltipComponentInstance {
@@ -47,11 +48,22 @@ export interface TooltipComponentInstance {
   styles: [`
     :host {
       display: block;
+      position: relative;
     }
     
     .ng-annotate-text-annotation {
       cursor: pointer;
       border-bottom: 2px solid transparent;
+      position: relative;
+      z-index: 1;
+    }
+    
+    .ng-annotate-text-temp-anchor {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      z-index: 9999;
+      pointer-events: none;
     }
   `],
   encapsulation: ViewEncapsulation.None
@@ -166,18 +178,19 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
     if (!this.popupComponentType) return;
 
     try {
+      // Ensure we have a valid selection
+      const selection = window.getSelection();
+      if (!selection || selection.isCollapsed || !selection.rangeCount) return;
+      
+      // Create the annotation
       const annotation = this.createAnnotation();
+      
+      // Update content to add the span
       this.updateContent();
       this.cdr.detectChanges();
       
-      // Find the newly created span
-      setTimeout(() => {
-        const span = this.elementRef.nativeElement.querySelector(`.ng-annotate-text-${annotation.id}`);
-        if (span) {
-          this.clearPopups();
-          this.createAnnotationPopup(annotation, span, true);
-        }
-      }, 0);
+      // Position popup directly at mouse position
+      this.createPopupAtMousePosition(annotation, event);
     } catch (ex) {
       if (ex instanceof Error) {
         this.annotateError.emit(ex);
@@ -393,5 +406,88 @@ export class AnnotateTextComponent implements OnChanges, AfterViewInit, OnDestro
   private clearPopups(): void {
     this.clearPopup();
     this.clearTooltip();
+  }
+
+  // Helper function to find annotation span
+  private findAnnotationSpan(annotationId: number): HTMLElement | null {
+    // First try querying our component element
+    const span = this.elementRef.nativeElement.querySelector(`.ng-annotate-text-${annotationId}`);
+    if (span) return span;
+    
+    // If not found, try searching the entire document
+    // (in case the span is in a different DOM context)
+    return document.querySelector(`.ng-annotate-text-${annotationId}`);
+  }
+  
+  private createPopupAtMousePosition(annotation: Annotation, event: MouseEvent): void {
+    if (!this.popupComponentType) return;
+    
+    this.clearPopups();
+    
+    // Create component instance
+    const componentFactory = this.componentFactoryResolver.resolveComponentFactory(this.popupComponentType);
+    const componentRef = this.viewContainerRef.createComponent<PopupComponentInstance>(
+      componentFactory, 
+      undefined, 
+      this.injector
+    );
+    
+    const instance = componentRef.instance;
+    instance.annotation = annotation;
+    instance.isNew = true;
+    instance.readonly = this.readonly;
+    instance.skipPositioning = true; // Skip automatic positioning
+    
+    // Setup functions
+    instance.close = () => {
+      this.annotate.emit(annotation);
+      this.clearPopup();
+    };
+
+    instance.reject = () => {
+      removeAnnotation(annotation.id, this.annotations);
+      this.annotateDelete.emit(annotation);
+      this.clearPopup();
+    };
+    
+    this.activePopup = componentRef;
+    this.cdr.detectChanges();
+    
+    // After component is created and rendered, position it directly
+    // Allow the component to render first
+    setTimeout(() => {
+      // Get the popup element
+      const popupElement = (componentRef.instance as any).el.nativeElement.querySelector('.ng-annotate-text-popup');
+      
+      if (popupElement) {
+        // Position the popup directly based on mouse position
+        popupElement.style.position = 'fixed'; // Use fixed positioning for more reliable coordinates
+        popupElement.style.zIndex = '9999';
+        
+        // Position at mouse coordinates
+        const x = event.clientX; // Use clientX for fixed positioning
+        const y = event.clientY + 20; // 20px below mouse
+        
+        popupElement.style.left = `${x}px`;
+        popupElement.style.top = `${y}px`;
+        
+        // Make sure popup stays in viewport
+        const rect = popupElement.getBoundingClientRect();
+        const viewportWidth = window.innerWidth;
+        const viewportHeight = window.innerHeight;
+        
+        // Check right edge
+        if (rect.right > viewportWidth) {
+          const offset = rect.right - viewportWidth + 10; // 10px buffer
+          popupElement.style.left = `${x - offset}px`;
+        }
+        
+        // Check bottom edge
+        if (rect.bottom > viewportHeight) {
+          const offset = rect.bottom - viewportHeight + 10; // 10px buffer
+          popupElement.style.top = `${y - offset}px`;
+        }
+      }
+    }, 0);
   }
 } 
