@@ -1,0 +1,75 @@
+/* Global styles */
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  color: #333;
+}
+
+/* Annotation highlight styles */
+.ng-annotate-text-annotation {
+  background-color: rgba(255, 255, 0, 0.3);
+  cursor: pointer;
+  border-bottom: 2px solid rgba(255, 200, 0, 0.5);
+  transition: background-color 0.2s ease-in-out;
+  
+  &:hover {
+    background-color: rgba(255, 255, 0, 0.5);
+  }
+}
+
+/* Different annotation types can have different colors */
+.ng-annotate-text-type-comment {
+  background-color: rgba(173, 216, 230, 0.3);
+  border-bottom-color: rgba(100, 149, 237, 0.5);
+  
+  &:hover {
+    background-color: rgba(173, 216, 230, 0.5);
+  }
+}
+
+.ng-annotate-text-type-important {
+  background-color: rgba(255, 182, 193, 0.3);
+  border-bottom-color: rgba(220, 20, 60, 0.5);
+  
+  &:hover {
+    background-color: rgba(255, 182, 193, 0.5);
+  }
+}
+
+/* Button styles */
+button {
+  padding: 8px 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  
+  &:hover {
+    background-color: #45a049;
+  }
+  
+  &:active {
+    background-color: #3e8e41;
+  }
+}
+
+/* Form field styles */
+input, textarea {
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  width: 100%;
+  box-sizing: border-box;
+  
+  &:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 5px rgba(76, 175, 80, 0.3);
+  }
+} 

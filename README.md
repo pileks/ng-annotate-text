@@ -1,66 +1,107 @@
-# ng-annotate-text
+# NgAnnotateText
 
-ng-annotate-text is a library to annotate texts in AngularJS.
+An Angular library for adding, displaying, and managing text annotations. This library has been rewritten from the original AngularJS version to work with modern Angular (2+).
 
 ![Screenshot](screenshot.png)
 
-## Demo
+## Features
 
-[Try a demo of ng-annotate.](http://digiexam.github.io/ng-annotate-text/)
+- Add annotations to text by selecting portions of text
+- Show tooltips with annotation details on hover
+- Create hierarchical (nested) annotations
+- Customizable popup and tooltip templates
+- Support for readonly mode
+- Full TypeScript support
 
-## Attributes
+## Installation
 
-Attribute | Default value | Description
---- | --- | ---
-text |   | The text to be annotated
-annotations |  | Annotations to load
-readonly | false | No new annotations can be made and existing annotations can't be edited
-popup-controller |  | Controller to apply to the popup
-popup-template-url |  | Url to the popup template
-tooltip-controller |  | Controller to apply to the tooltip
-tooltip-template-url |  | Url to the tooltip template
-on-annotate |  | Function called when an annotation is saved, with the annotation passed as the first attribute
-on-annotate-delete |  | Function called when an annotation is deleted, with the annotation passed as the first attribute
-on-annotate-error |  | Function called when an error is caught, with the error passed as the first attribute
-on-popup-show |  | Function called when the popup is shown
-on-popup-hide |  | Function called when the popup is hidden 
-popup-offset | 10 | Position the popup editor away form its annotation and the window edges by this many pixels
+```bash
+npm install ng-annotate-text --save
+```
 
-## Event listeners
+## Usage
 
-Event | Description
---- | ---
-ngAnnotateText.clearPopups | Clears any open popup or tooltip
+1. Import the module in your app:
 
-## Errors passed to the annotation error callback
+```typescript
+import { NgAnnotateTextModule } from 'ng-annotate-text';
 
-Error | Description
---- | ---
-NG_ANNOTATE_TEXT_NO_TEXT_SELECTED | The user clicked the text but no text were selected
-NG_ANNOTATE_TEXT_PARTIAL_NODE_SELECTED | The selection did not start and end in the same element
+@NgModule({
+  imports: [
+    // ...
+    NgAnnotateTextModule
+  ]
+})
+export class AppModule { }
+```
 
-## Getting started with development
+2. Use the component in your templates:
 
-1. Install NodeJS ([nodejs.org](http://nodejs.org/))
-2. Install Gulp globally: `npm install -g gulp`
-3. Fork the repo and clone it. ([How to do it with GitHub.](https://help.github.com/articles/fork-a-repo))
-4. Go into the project folder: `cd ng-annotate-text`
-5. Install the project dependencies: `npm install`
-6. Build the project files: `gulp`
-  * Build them whenever they change: `gulp watch`
+```html
+<ng-annotate-text
+  [text]="textContent"
+  [annotations]="annotations"
+  [readonly]="false"
+  [popupComponentType]="CustomPopupComponent"
+  [tooltipComponentType]="CustomTooltipComponent"
+  [popupOffset]="10"
+  (annotate)="onAnnotate($event)"
+  (annotateDelete)="onAnnotateDelete($event)"
+  (annotateError)="onAnnotateError($event)">
+</ng-annotate-text>
+```
 
-To make development of ng-annotate-text easier you can check out the `master` branch in one directory and the `gh-pages` branch in another, then symlink the dist files from `master` into the `lib` directory in `gh-pages`, and change the includes in `index.html` to use those versions.
+3. Define your annotations in the component:
 
-## Browser compatability
+```typescript
+import { Component } from '@angular/core';
+import { Annotation } from 'ng-annotate-text';
 
-Chrome, Firefox, Safari and IE9+
+@Component({
+  selector: 'app-annotator',
+  templateUrl: './annotator.component.html'
+})
+export class AnnotatorComponent {
+  textContent = 'This is a sample text that can be annotated.';
+  annotations: Annotation[] = [];
 
-Autoprefixer rule: last 2 versions, ie >= 9, Firefox ESR
+  onAnnotate(annotation: Annotation): void {
+    console.log('Annotation created/updated', annotation);
+    // You can save this to your backend
+  }
+
+  onAnnotateDelete(annotation: Annotation): void {
+    console.log('Annotation deleted', annotation);
+  }
+
+  onAnnotateError(error: Error): void {
+    console.error('Annotation error', error);
+  }
+}
+```
+
+## Development
+
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Start the development server: `npm start`
+4. Open your browser at `http://localhost:4200`
+
+## Building the Library
+
+```bash
+npm run build
+```
+
+## Upgrading from AngularJS Version
+
+This is a complete rewrite of the original AngularJS library, designed to work with modern Angular. If you're migrating from the AngularJS version:
+
+- The component name remains `ng-annotate-text` for easier migration
+- The annotation model structure is preserved
+- Templates are now component-based instead of URL-based
+- Event handling follows Angular's event binding syntax
 
 ## License
 
-Licensed under CC-BY-NC
-
-https://tldrlegal.com/license/creative-commons-attribution-noncommercial-(cc-nc)
-
-Copyright (C) 2014 DigiExam
+MIT License
